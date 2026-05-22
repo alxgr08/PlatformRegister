@@ -88,11 +88,36 @@ export default function EditarPersonaModal({ asistente, onCerrar, onGuardado }: 
           </label>
           <label className="block">
             <span className="mb-1 block text-sm font-medium text-slate-700">Especialidad</span>
-            <input
+            <select
               className={inputCls}
               value={especialidad}
               onChange={(e) => setEspecialidad(e.target.value)}
-            />
+            >
+              <option value="" disabled>
+                Seleccione una especialidad
+              </option>
+              {[
+                "Albañil",
+                "Arquitecto",
+                "Carpintero",
+                "Contratista",
+                "Electricista",
+                "Gasfitero o técnico sanitario",
+                "Ingeniero",
+                "Pintor",
+                "Carpintero mueblista",
+                "Constructor metálico",
+                "Especialista en terminaciones / acabados",
+                "Todista / Servicios generales",
+                "Experto en diseño de interiores / Decorador",
+                "Constructor de jardines",
+                "Drywallero"
+              ].map((esp) => (
+                <option key={esp} value={esp}>
+                  {esp}
+                </option>
+              ))}
+            </select>
           </label>
         </div>
         <div className="flex justify-end gap-2 border-t border-slate-200 px-5 py-4">
