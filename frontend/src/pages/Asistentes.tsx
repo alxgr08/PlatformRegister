@@ -229,11 +229,36 @@ export default function Asistentes() {
                 />
               </Campo>
               <Campo etiqueta="Especialidad">
-                <input
+                <select
                   className={inputCls}
                   value={nuevo.especialidad}
                   onChange={(e) => setNuevo({ ...nuevo, especialidad: e.target.value })}
-                />
+                >
+                  <option value="" disabled>
+                    Seleccione una especialidad
+                  </option>
+                  {[
+                    "Albañil",
+                    "Arquitecto",
+                    "Carpintero",
+                    "Contratista",
+                    "Electricista",
+                    "Gasfitero o técnico sanitario",
+                    "Ingeniero",
+                    "Pintor",
+                    "Carpintero mueblista",
+                    "Constructor metálico",
+                    "Especialista en terminaciones / acabados",
+                    "Todista / Servicios generales",
+                    "Experto en diseño de interiores / Decorador",
+                    "Constructor de jardines",
+                    "Drywallero"
+                  ].map((esp) => (
+                    <option key={esp} value={esp}>
+                      {esp}
+                    </option>
+                  ))}
+                </select>
               </Campo>
               <Campo etiqueta="Tipo de registro">
                 <input
