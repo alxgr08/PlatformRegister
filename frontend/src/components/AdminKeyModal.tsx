@@ -1,6 +1,4 @@
 import { useState } from 'react'
-import { Lock, X, AlertCircle, Loader } from 'lucide-react'
-import { useToast } from './Toast'
 
 interface Props {
   onConfirmar: (clave: string) => Promise<void>
@@ -14,13 +12,12 @@ interface Props {
  * - Valida la clave "13082010" contra el backend
  * - Muestra errores claros si la clave es incorrecta
  * - Desactiva el botón durante la validación
- * - Integra notificaciones de éxito con Toast
+ * - Usa estado local para manejar errores
  */
 export default function AdminKeyModal({ onConfirmar, onCerrar }: Props) {
   const [clave, setClave] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [cargando, setCargando] = useState(false)
-  const { notificar } = useToast()
 
   async function manejarEnvio(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -36,11 +33,10 @@ export default function AdminKeyModal({ onConfirmar, onCerrar }: Props) {
 
     try {
       await onConfirmar(claveTrimed)
-      notificar('exito', 'Sesión de administrador iniciada correctamente.')
+      alert('Sesión de administrador iniciada correctamente.')
     } catch (err) {
       const mensaje = err instanceof Error ? err.message : 'Error al validar la clave'
       setError(mensaje)
-      notificar('error', mensaje)
       setCargando(false)
     }
   }
@@ -51,15 +47,16 @@ export default function AdminKeyModal({ onConfirmar, onCerrar }: Props) {
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
           <div className="flex items-center gap-2 font-semibold text-slate-800">
-            <Lock className="h-5 w-5 text-blue-600" />
+            <span className="text-lg">🔒</span>
             Acceso de administración
           </div>
           <button 
             onClick={onCerrar} 
-            className="text-slate-400 hover:text-slate-600 disabled:opacity-50"
+            className="text-slate-400 hover:text-slate-600 disabled:opacity-50 text-lg"
             disabled={cargando}
+            title="Cerrar"
           >
-            <X className="h-5 w-5" />
+            ✕
           </button>
         </div>
 
@@ -72,7 +69,7 @@ export default function AdminKeyModal({ onConfirmar, onCerrar }: Props) {
           {/* Error message */}
           {error && (
             <div className="mb-4 flex items-start gap-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">
-              <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
+              <span className="text-lg shrink-0">⚠️</span>
               <span>{error}</span>
             </div>
           )}
@@ -106,8 +103,7 @@ export default function AdminKeyModal({ onConfirmar, onCerrar }: Props) {
               disabled={cargando}
               className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50 disabled:hover:bg-blue-600 transition-colors"
             >
-              {cargando && <Loader className="h-4 w-4 animate-spin" />}
-              {cargando ? 'Validando...' : 'Continuar'}
+              {cargando ? '⏳ Validando...' : 'Continuar'}
             </button>
           </div>
         </form>
