@@ -62,19 +62,21 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 /** Ventana para ingresar la clave de administrador. */
 export function AdminLoginModal({ onCerrar }: { onCerrar: () => void }) {
   const { ingresar } = useAdmin()
-  const { notificar } = useToast()
   const [clave, setClave] = useState('')
   const [cargando, setCargando] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   async function enviar() {
     if (!clave.trim()) return
     setCargando(true)
+    setError(null)
     try {
       await ingresar(clave.trim())
-      notificar('exito', 'Acceso de administrador activado en este dispositivo.')
+      alert('Acceso de administrador activado en este dispositivo.')
       onCerrar()
     } catch (e) {
-      notificar('error', e instanceof Error ? e.message : 'Clave incorrecta')
+      const mensaje = e instanceof Error ? e.message : 'Clave incorrecta'
+      setError(mensaje)
     } finally {
       setCargando(false)
     }
@@ -85,11 +87,16 @@ export function AdminLoginModal({ onCerrar }: { onCerrar: () => void }) {
       <div className="w-full max-w-sm rounded-xl bg-white shadow-xl">
         <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
           <div className="flex items-center gap-2 font-semibold text-slate-800">
-            <Lock className="h-5 w-5 text-blue-600" />
+            <span className="text-lg">🔒</span>
             Ingresar como administrador
           </div>
-          <button onClick={onCerrar} className="text-slate-400 hover:text-slate-600">
-            <X className="h-5 w-5" />
+          <button 
+            onClick={onCerrar} 
+            className="text-slate-400 hover:text-slate-600 text-lg" 
+            title="Cerrar"
+            disabled={cargando}
+          >
+            ✕
           </button>
         </div>
         <form
@@ -103,19 +110,26 @@ export function AdminLoginModal({ onCerrar }: { onCerrar: () => void }) {
             Ingresa la clave para habilitar la edicion de salas/aforos y la base de datos. Solo se
             pide una vez en este dispositivo.
           </p>
+          {error && (
+            <div className="mb-3 rounded-lg bg-red-50 p-2 text-sm text-red-700">
+              {error}
+            </div>
+          )}
           <input
             type="password"
             autoFocus
+            disabled={cargando}
             value={clave}
             onChange={(e) => setClave(e.target.value)}
             placeholder="Clave de administrador"
-            className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100 disabled:text-slate-400"
           />
           <div className="mt-4 flex justify-end gap-2">
             <button
               type="button"
               onClick={onCerrar}
-              className="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100"
+              disabled={cargando}
+              className="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 disabled:opacity-50"
             >
               Cancelar
             </button>
