@@ -187,10 +187,13 @@ public class CargaService {
                 agregarError("Fila " + (rowNum + 1) + ": NUMERO_DOCUMENTO vacio, fila omitida.");
                 return;
             }
-            String nombre = valor("nombre");
-            String apellidos = valor("apellidos");
-            String nombreCompleto = ((nombre == null ? "" : nombre) + " "
-                    + (apellidos == null ? "" : apellidos)).trim();
+            String nombre = primerValor("nombres", "nombre");
+            String apellidos = primerValor("apellidos", "apellido");
+            String nombreCompleto = primerValor("nombre_completo", "nombrecompleto");
+            if (nombreCompleto == null) {
+                nombreCompleto = ((nombre == null ? "" : nombre) + " "
+                        + (apellidos == null ? "" : apellidos)).trim();
+            }
             if (nombreCompleto.isEmpty()) {
                 nombreCompleto = "(Sin nombre)";
             }
@@ -231,6 +234,16 @@ public class CargaService {
             }
             v = v.trim();
             return v.isEmpty() ? null : v;
+        }
+
+        private String primerValor(String... cabecerasNormalizadas) {
+            for (String cabecera : cabecerasNormalizadas) {
+                String v = valor(cabecera);
+                if (v != null) {
+                    return v;
+                }
+            }
+            return null;
         }
 
         private void agregarError(String mensaje) {
@@ -364,9 +377,8 @@ public class CargaService {
                     agregarError(errores, "Fila " + numLinea + ": DNI vacio, fila omitida.");
                     continue;
                 }
-                String nombre = primerNoNulo(
-                        valorCsv(campos, columnas, "nombre_completo"),
-                        valorCsv(campos, columnas, "nombre"));
+                String nombre = primerValorCsv(campos, columnas,
+                        "nombre_completo", "nombrecompleto", "nombres", "nombre");
                 if (nombre == null) {
                     omitidas++;
                     agregarError(errores, "Fila " + numLinea + ": nombre vacio (DNI " + dni + ").");
@@ -533,6 +545,16 @@ public class CargaService {
         }
         v = v.trim();
         return v.isEmpty() ? null : v;
+    }
+
+    private String primerValorCsv(List<String> campos, Map<String, Integer> columnas, String... nombres) {
+        for (String nombre : nombres) {
+            String v = valorCsv(campos, columnas, nombre);
+            if (v != null) {
+                return v;
+            }
+        }
+        return null;
     }
 
     private String primerNoNulo(String a, String b) {
