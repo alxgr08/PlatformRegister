@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { CheckCircle2, Info, Pencil, Search, ShieldAlert, UserPlus, Users } from 'lucide-react'
 import {
   api,
@@ -8,7 +8,6 @@ import {
 } from '../api'
 import EditarPersonaModal from '../components/EditarPersonaModal'
 import PageHeader from '../components/PageHeader'
-import RegistroCharlas from '../components/RegistroCharlas'
 import { useToast } from '../components/Toast'
 import { formatoFechaHora } from '../lib/formato'
 
@@ -40,6 +39,7 @@ export default function Asistentes() {
   const [accionando, setAccionando] = useState(false)
   const [nuevo, setNuevo] = useState<NuevoAsistente>(NUEVO_VACIO)
   const [editando, setEditando] = useState(false)
+  const dniRef = useRef<HTMLInputElement>(null)
 
   const cargarStats = useCallback(async () => {
     try {
@@ -52,6 +52,14 @@ export default function Asistentes() {
   useEffect(() => {
     cargarStats()
   }, [cargarStats])
+
+  /** Deja la pantalla en blanco, lista para la siguiente persona de la fila. */
+  function limpiar() {
+    setDni('')
+    setBusqueda(null)
+    setNuevo(NUEVO_VACIO)
+    dniRef.current?.focus()
+  }
 
   async function buscar() {
     const d = dni.trim()
@@ -74,15 +82,41 @@ export default function Asistentes() {
     }
   }
 
-  async function registrarIngreso(asistente: Asistente) {
+  /** Solo guarda al asistente en la base. No lo agrega al evento todavia. */
+  async function guardarAsistente() {
+    if (!nuevo.dni.trim() || !nuevo.nombreCompleto.trim()) {
+      notificar('info', 'El DNI y el nombre completo son obligatorios.')
+      return
+    }
     setAccionando(true)
     try {
-      const actualizado = await api.registrarIngreso(asistente.dni)
-      setBusqueda({ encontrado: true, asistente: actualizado })
-      notificar('exito', `${actualizado.nombreCompleto} registrado al evento.`)
+      const creado = await api.crearAsistente({
+        dni: nuevo.dni.trim(),
+        nombreCompleto: nuevo.nombreCompleto.trim(),
+        celular: nuevo.celular.trim() || undefined,
+        correo: nuevo.correo.trim() || undefined,
+        especialidad: nuevo.especialidad.trim() || undefined,
+      })
+      setBusqueda({ encontrado: true, asistente: creado })
+      notificar('exito', `${creado.nombreCompleto} guardado. Ahora agregalo al evento.`)
       cargarStats()
     } catch (e) {
-      notificar('error', e instanceof Error ? e.message : 'Error al registrar')
+      notificar('error', e instanceof Error ? e.message : 'Error al guardar')
+    } finally {
+      setAccionando(false)
+    }
+  }
+
+  /** Agrega al evento y deja todo en blanco para la siguiente consulta. */
+  async function agregarAlEvento(asistente: Asistente) {
+    setAccionando(true)
+    try {
+      await api.registrarIngreso(asistente.dni)
+      notificar('exito', `${asistente.nombreCompleto} agregado al evento.`)
+      cargarStats()
+      limpiar()
+    } catch (e) {
+      notificar('error', e instanceof Error ? e.message : 'Error al agregar al evento')
     } finally {
       setAccionando(false)
     }
@@ -98,31 +132,6 @@ export default function Asistentes() {
       cargarStats()
     } catch (e) {
       notificar('error', e instanceof Error ? e.message : 'Error')
-    } finally {
-      setAccionando(false)
-    }
-  }
-
-  async function crearYRegistrar() {
-    if (!nuevo.dni.trim() || !nuevo.nombreCompleto.trim()) {
-      notificar('info', 'El DNI y el nombre completo son obligatorios.')
-      return
-    }
-    setAccionando(true)
-    try {
-      await api.crearAsistente({
-        dni: nuevo.dni.trim(),
-        nombreCompleto: nuevo.nombreCompleto.trim(),
-        celular: nuevo.celular.trim() || undefined,
-        correo: nuevo.correo.trim() || undefined,
-        especialidad: nuevo.especialidad.trim() || undefined,
-      })
-      const conIngreso = await api.registrarIngreso(nuevo.dni.trim())
-      setBusqueda({ encontrado: true, asistente: conIngreso })
-      notificar('exito', `${conIngreso.nombreCompleto} agregado y registrado al evento.`)
-      cargarStats()
-    } catch (e) {
-      notificar('error', e instanceof Error ? e.message : 'Error al registrar')
     } finally {
       setAccionando(false)
     }
@@ -151,6 +160,7 @@ export default function Asistentes() {
           <h2 className="mb-3 font-semibold text-blue-700">1. Buscar por DNI</h2>
           <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
             <input
+              ref={dniRef}
               className={inputCls}
               placeholder="Ingrese DNI"
               inputMode="numeric"
@@ -172,22 +182,19 @@ export default function Asistentes() {
             <PersonaEncontrada
               asistente={asistente}
               accionando={accionando}
-              onRegistrar={() => registrarIngreso(asistente)}
+              onAgregarEvento={() => agregarAlEvento(asistente)}
               onDeshacer={() => deshacerIngreso(asistente)}
               onEditar={() => setEditando(true)}
+              onNuevaBusqueda={limpiar}
             />
           )}
         </section>
-
-        {asistente?.ingresadoAlEvento && (
-          <RegistroCharlas persona={asistente} titulo="Agregar a las charlas / salas" />
-        )}
 
         {busqueda && !busqueda.encontrado && (
           <section className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
             <h2 className="font-semibold text-blue-700">2. No se encontro la persona</h2>
             <p className="mb-4 text-sm text-slate-500">
-              Complete los datos para agregar y registrar al evento.
+              Complete los datos para guardarlo como registrado. Luego podra agregarlo al evento.
             </p>
             <div className="grid gap-4 sm:grid-cols-2">
               <Campo etiqueta="DNI" obligatorio>
@@ -238,12 +245,12 @@ export default function Asistentes() {
             </div>
             <div className="mt-4 flex justify-end">
               <button
-                onClick={crearYRegistrar}
+                onClick={guardarAsistente}
                 disabled={accionando}
                 className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60 sm:w-auto"
               >
                 <UserPlus className="h-4 w-4" />
-                Agregar asistente y registrar al evento
+                Guardar asistente
               </button>
             </div>
           </section>
@@ -322,15 +329,17 @@ function Dato({ etiqueta, valor }: { etiqueta: string; valor: string }) {
 function PersonaEncontrada({
   asistente,
   accionando,
-  onRegistrar,
+  onAgregarEvento,
   onDeshacer,
   onEditar,
+  onNuevaBusqueda,
 }: {
   asistente: Asistente
   accionando: boolean
-  onRegistrar: () => void
+  onAgregarEvento: () => void
   onDeshacer: () => void
   onEditar: () => void
+  onNuevaBusqueda: () => void
 }) {
   return (
     <div className="mt-4 rounded-xl border border-green-300 bg-green-50/60 p-4 sm:p-5">
@@ -366,34 +375,42 @@ function PersonaEncontrada({
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="flex items-center gap-2 text-sm font-medium text-green-700">
               <CheckCircle2 className="h-4 w-4" />
-              Ya registrado al evento
+              Ya esta registrado en el evento
               {asistente.fechaIngresoEvento && (
                 <span className="font-normal text-slate-500">
                   ({formatoFechaHora(asistente.fechaIngresoEvento)})
                 </span>
               )}
             </p>
-            <button
-              onClick={onDeshacer}
-              disabled={accionando}
-              className="text-sm font-medium text-red-600 hover:underline disabled:opacity-60"
-            >
-              Deshacer ingreso
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={onDeshacer}
+                disabled={accionando}
+                className="text-sm font-medium text-red-600 hover:underline disabled:opacity-60"
+              >
+                Deshacer ingreso
+              </button>
+              <button
+                onClick={onNuevaBusqueda}
+                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+              >
+                Nueva busqueda
+              </button>
+            </div>
           </div>
         ) : (
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="flex items-center gap-2 text-sm text-blue-700">
               <Info className="h-4 w-4" />
-              Esta persona aun no esta registrada al evento.
+              Esta persona aun no esta en el evento.
             </p>
             <button
-              onClick={onRegistrar}
+              onClick={onAgregarEvento}
               disabled={accionando}
               className="flex items-center gap-2 rounded-lg bg-green-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-60"
             >
               <CheckCircle2 className="h-4 w-4" />
-              {accionando ? 'Registrando...' : 'Registrar al evento'}
+              {accionando ? 'Agregando...' : 'Agregar al evento'}
             </button>
           </div>
         )}

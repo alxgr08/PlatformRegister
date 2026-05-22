@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Plus, Save, Trash2, X } from 'lucide-react'
-import { api, ApiError, clearAdminKey, type Charla, type CharlaInput } from '../api'
+import { api, ApiError, type Charla, type CharlaInput } from '../api'
 import { isoAInputLocal } from '../lib/formato'
 import { useToast } from './Toast'
+import { useAdmin } from './admin'
 
 const inputCls =
   'w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100'
@@ -19,11 +20,11 @@ const NUEVA_VACIA: CharlaInput = {
 
 interface Props {
   onCerrar: () => void
-  onClaveInvalida: () => void
 }
 
-export default function EditarSalasModal({ onCerrar, onClaveInvalida }: Props) {
+export default function EditarSalasModal({ onCerrar }: Props) {
   const { notificar } = useToast()
+  const { salir } = useAdmin()
   const [charlas, setCharlas] = useState<Charla[]>([])
   const [cargando, setCargando] = useState(true)
 
@@ -43,9 +44,9 @@ export default function EditarSalasModal({ onCerrar, onClaveInvalida }: Props) {
 
   function manejarError(e: unknown) {
     if (e instanceof ApiError && e.status === 401) {
-      clearAdminKey()
-      notificar('error', 'Clave de administracion incorrecta.')
-      onClaveInvalida()
+      salir()
+      notificar('error', 'Sesión de administrador expirada. Ingresa la clave de nuevo.')
+      onCerrar()
       return
     }
     notificar('error', e instanceof Error ? e.message : 'Error inesperado')

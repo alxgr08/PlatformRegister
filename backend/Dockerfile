@@ -12,7 +12,7 @@ COPY src ./src
 RUN mvn -B clean package -DskipTests
 
 # ---- Etapa 2: imagen liviana de ejecucion ----
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:21-jre 
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 # Render inyecta la variable PORT; la app la lee con server.port=${PORT}

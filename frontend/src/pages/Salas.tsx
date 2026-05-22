@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import {
   AlertTriangle,
   CheckCircle2,
@@ -9,13 +9,13 @@ import {
   Presentation,
   Search,
 } from 'lucide-react'
-import { api, getAdminKey, setAdminKey, type Asistente } from '../api'
-import AdminKeyModal from '../components/AdminKeyModal'
+import { api, type Asistente } from '../api'
 import EditarPersonaModal from '../components/EditarPersonaModal'
 import EditarSalasModal from '../components/EditarSalasModal'
 import PageHeader from '../components/PageHeader'
 import RegistroCharlas from '../components/RegistroCharlas'
 import { useToast } from '../components/Toast'
+import { useAdmin } from '../components/admin'
 
 const inputCls =
   'w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100'
@@ -27,13 +27,14 @@ interface MensajePersona {
 
 export default function Salas() {
   const { notificar } = useToast()
+  const { esAdmin } = useAdmin()
   const [dni, setDni] = useState('')
   const [persona, setPersona] = useState<Asistente | null>(null)
   const [mensajePersona, setMensajePersona] = useState<MensajePersona | null>(null)
   const [buscando, setBuscando] = useState(false)
-  const [mostrarAdminKey, setMostrarAdminKey] = useState(false)
   const [mostrarEditar, setMostrarEditar] = useState(false)
   const [editandoPersona, setEditandoPersona] = useState(false)
+  const dniRef = useRef<HTMLInputElement>(null)
 
   async function buscar() {
     const d = dni.trim()
@@ -64,9 +65,20 @@ export default function Salas() {
     }
   }
 
+  /** Tras guardar los registros, deja la pantalla lista para el siguiente asistente. */
+  function reiniciar() {
+    setPersona(null)
+    setDni('')
+    setMensajePersona(null)
+    dniRef.current?.focus()
+  }
+
   function abrirEditar() {
-    if (getAdminKey()) setMostrarEditar(true)
-    else setMostrarAdminKey(true)
+    if (!esAdmin) {
+      notificar('info', 'Debes iniciar sesión como administrador para editar salas y aforos.')
+      return
+    }
+    setMostrarEditar(true)
   }
 
   return (
@@ -78,10 +90,12 @@ export default function Salas() {
         accion={
           <button
             onClick={abrirEditar}
-            className="flex items-center gap-2 rounded-lg border border-blue-300 px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50"
+            className="flex items-center gap-2 rounded-lg border border-blue-300 px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50 disabled:opacity-50 disabled:hover:bg-white"
+            disabled={!esAdmin}
+            title={!esAdmin ? 'Solo los administradores pueden editar salas y aforos' : ''}
           >
             <Lock className="h-4 w-4" />
-            Editar salas y aforos
+            {esAdmin ? 'Editar salas y aforos' : 'Solo Admin'}
           </button>
         }
       />
@@ -91,6 +105,7 @@ export default function Salas() {
           <h2 className="mb-3 font-semibold text-blue-700">1. Ingresar DNI del asistente</h2>
           <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
             <input
+              ref={dniRef}
               className={inputCls}
               placeholder="Ingrese DNI"
               inputMode="numeric"
@@ -153,36 +168,20 @@ export default function Salas() {
           )}
         </section>
 
-        <RegistroCharlas persona={persona} titulo="2. Registrar en las charlas" />
+        <RegistroCharlas persona={persona} onGuardado={reiniciar} />
 
         <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
           <Lightbulb className="h-5 w-5 shrink-0 text-amber-600" />
           <p className="text-sm text-amber-800">
-            <span className="font-semibold">Consejo:</span> Busca el DNI del asistente y haz clic en
-            "Agregar" en cada charla. Puedes registrarlo en una o varias charlas; el contador se
-            actualiza solo.
+            <span className="font-semibold">Consejo:</span> Busca el DNI, marca las charlas con
+            "Agregar" y presiona "Guardar". Al guardar, la pantalla se reinicia para el siguiente
+            asistente.
           </p>
         </div>
       </div>
 
-      {mostrarAdminKey && (
-        <AdminKeyModal
-          onCerrar={() => setMostrarAdminKey(false)}
-          onConfirmar={(clave) => {
-            setAdminKey(clave)
-            setMostrarAdminKey(false)
-            setMostrarEditar(true)
-          }}
-        />
-      )}
       {mostrarEditar && (
-        <EditarSalasModal
-          onCerrar={() => setMostrarEditar(false)}
-          onClaveInvalida={() => {
-            setMostrarEditar(false)
-            setMostrarAdminKey(true)
-          }}
-        />
+        <EditarSalasModal onCerrar={() => setMostrarEditar(false)} />
       )}
       {editandoPersona && persona && (
         <EditarPersonaModal

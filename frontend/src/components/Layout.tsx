@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
-import { CalendarDays, Database, Menu, Presentation, Users, X } from 'lucide-react'
+import { CalendarDays, Database, Lock, LogOut, Menu, Presentation, Users, X } from 'lucide-react'
+import { useAdmin } from './admin'
+import AdminKeyModal from './AdminKeyModal'
 
 function claseNav({ isActive }: { isActive: boolean }): string {
   return `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
@@ -11,7 +13,9 @@ function claseNav({ isActive }: { isActive: boolean }): string {
 }
 
 export default function Layout() {
+  const { esAdmin, ingresar, salir } = useAdmin()
   const [menuAbierto, setMenuAbierto] = useState(false)
+  const [mostrarModalAdmin, setMostrarModalAdmin] = useState(false)
   const cerrar = () => setMenuAbierto(false)
 
   return (
@@ -47,26 +51,83 @@ export default function Layout() {
             <Presentation className="h-5 w-5" />
             Salas / Charlas
           </NavLink>
-          <NavLink to="/base-datos" className={claseNav} onClick={cerrar}>
-            <Database className="h-5 w-5" />
-            Base de Datos
-          </NavLink>
+          {/* BaseDatos solo visible para admin */}
+          {esAdmin && (
+            <NavLink to="/base-datos" className={claseNav} onClick={cerrar}>
+              <Database className="h-5 w-5" />
+              Base de Datos
+            </NavLink>
+          )}
         </nav>
       </aside>
 
       {/* Contenido */}
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* Barra superior solo en movil/tablet */}
-        <div className="flex items-center gap-3 bg-[#0b1c3f] px-4 py-3 text-white lg:hidden">
-          <button onClick={() => setMenuAbierto(true)} aria-label="Abrir menu">
-            <Menu className="h-6 w-6" />
-          </button>
-          <span className="font-bold">EVENTO 2026</span>
-        </div>
+        {/* Barra superior con opciones de admin */}
+        <header className="border-b border-slate-200 bg-white shadow-sm">
+          <div className="flex items-center justify-between px-4 py-3">
+            {/* Boton menu mobile + titulo */}
+            <div className="flex items-center gap-3 lg:hidden">
+              <button onClick={() => setMenuAbierto(true)} aria-label="Abrir menu">
+                <Menu className="h-6 w-6 text-slate-700" />
+              </button>
+              <span className="font-bold text-slate-800">EVENTO 2026</span>
+            </div>
+            {/* Titulo en desktop */}
+            <div className="hidden text-sm font-semibold text-slate-700 lg:block">
+              Gestión de Evento 2026
+            </div>
+            {/* Botones de admin a la derecha */}
+            <div className="flex items-center gap-2">
+              {!esAdmin ? (
+                <button
+                  onClick={() => setMostrarModalAdmin(true)}
+                  className="flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
+                >
+                  <Lock className="h-4 w-4" />
+                  <span className="hidden sm:inline">Ingresar como Admin</span>
+                  <span className="sm:hidden">Admin</span>
+                </button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <div className="hidden sm:flex items-center gap-2 rounded-lg bg-green-50 px-3 py-2 text-sm font-semibold text-green-700">
+                    <div className="h-2 w-2 rounded-full bg-green-600 animate-pulse" />
+                    Modo Admin
+                  </div>
+                  <button
+                    onClick={() => salir()}
+                    className="flex items-center gap-2 rounded-lg bg-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-300 transition-colors"
+                    title="Cerrar sesión de admin"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span className="hidden sm:inline">Salir</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </header>
+
+        {/* Contenido principal */}
         <main className="min-w-0 flex-1">
           <Outlet />
         </main>
       </div>
+
+      {/* Modal para ingresar contraseña de admin */}
+      {mostrarModalAdmin && (
+        <AdminKeyModal
+          onConfirmar={async (clave) => {
+            try {
+              await ingresar(clave)
+              setMostrarModalAdmin(false)
+            } catch (e) {
+              // El error es manejado por el componente AdminKeyModal
+              throw e
+            }
+          }}
+          onCerrar={() => setMostrarModalAdmin(false)}
+        />
+      )}
     </div>
   )
-}

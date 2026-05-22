@@ -36,8 +36,10 @@ public class AdminKeyInterceptor implements HandlerInterceptor {
         // El modulo de carga (importar/exportar base de datos) exige clave en TODOS los metodos.
         boolean esCarga = path.contains("/api/carga/");
         if (!esCarga) {
-            // Charlas: las lecturas (GET) y el registro rapido quedan abiertas.
-            if ("GET".equalsIgnoreCase(metodo) || path.contains("/registros")) {
+            // Charlas: lecturas (GET), registro rapido y mostrar/ocultar quedan abiertos.
+            if ("GET".equalsIgnoreCase(metodo)
+                    || path.contains("/registros")
+                    || path.contains("/visibilidad")) {
                 return true;
             }
         }

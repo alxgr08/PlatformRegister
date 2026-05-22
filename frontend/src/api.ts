@@ -83,15 +83,20 @@ export interface ResultadoCarga {
 const ADMIN_KEY_STORAGE = 'evento.adminKey'
 
 export function getAdminKey(): string | null {
-  return sessionStorage.getItem(ADMIN_KEY_STORAGE)
+  return localStorage.getItem(ADMIN_KEY_STORAGE)
 }
 
 export function setAdminKey(clave: string): void {
-  sessionStorage.setItem(ADMIN_KEY_STORAGE, clave)
+  localStorage.setItem(ADMIN_KEY_STORAGE, clave)
 }
 
 export function clearAdminKey(): void {
-  sessionStorage.removeItem(ADMIN_KEY_STORAGE)
+  localStorage.removeItem(ADMIN_KEY_STORAGE)
+}
+
+/** Valida la clave de administrador contra el backend. Lanza ApiError si es incorrecta. */
+export async function loginAdmin(clave: string): Promise<void> {
+  await request('/api/admin/login', { method: 'POST', body: { clave } })
 }
 
 // --------------------------------------------------------------- Cliente HTTP
@@ -189,6 +194,9 @@ export const api = {
     request<Charla>(`/api/charlas/${charlaId}/registros/${encodeURIComponent(dni)}`, {
       method: 'DELETE',
     }),
+
+  cambiarVisibilidadCharla: (charlaId: number, oculta: boolean) =>
+    request<Charla>(`/api/charlas/${charlaId}/visibilidad`, { method: 'PATCH', body: { oculta } }),
 }
 
 // --------------------------------------------------- Base de datos (Excel)
