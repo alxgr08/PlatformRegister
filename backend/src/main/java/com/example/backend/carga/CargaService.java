@@ -54,12 +54,13 @@ public class CargaService {
     private static final char BOM = (char) 0xFEFF;
     private static final DateTimeFormatter FORMATO_FECHA = DateTimeFormatter.ofPattern("d/MM/yyyy HH:mm");
 
-    /** UPSERT del Excel: inserta o actualiza por DNI (conserva el ingreso al evento). */
+    /** UPSERT del Excel: inserta o actualiza por DNI sin registrar ingreso al evento. */
     private static final String UPSERT_EXCEL_SQL = """
             insert into asistente
                 (dni, nombre_completo, nombre, apellidos, celular, correo, tipo_documento,
-                 terminos_cmr, terminos_condiciones, fecha_registro_origen, tipo_registro, creado_en)
-            values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now())
+                 terminos_cmr, terminos_condiciones, fecha_registro_origen, tipo_registro,
+                 fecha_ingreso_evento, creado_en)
+            values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, null, now())
             on conflict (dni) do update set
                 nombre_completo       = excluded.nombre_completo,
                 nombre                = excluded.nombre,
@@ -88,10 +89,10 @@ public class CargaService {
             """;
 
     private static final String SELECT_EXPORT_SQL = """
-            select dni, nombre, apellidos, nombre_completo, celular, correo, tipo_documento,
-                   terminos_cmr, terminos_condiciones, fecha_registro_origen, creado_en
+            select dni, nombre_completo, celular, correo, especialidad, fecha_ingreso_evento
             from asistente
-            order by id
+            where fecha_ingreso_evento is not null
+            order by fecha_ingreso_evento, id
             """;
 
     private final JdbcTemplate jdbcTemplate;
@@ -269,8 +270,7 @@ public class CargaService {
     @Transactional(readOnly = true)
     public void exportarAsistentesExcel(OutputStream out) throws IOException {
         String[] cabeceras = {
-                "SubscriberKey", "EmailAddress", "TIPO_DOCUMENTO", "NUMERO_DOCUMENTO", "CELULAR",
-                "TERMINOS_CMR", "FECHA_REGISTRO", "NOMBRE", "APELLIDOS", "TERMINOS_CONDICIONES"
+                "DNI", "NOMBRE", "CELULAR", "CORREO", "ESPECIALIDAD", "HORA DE REGISTRO"
         };
         try (SXSSFWorkbook wb = new SXSSFWorkbook(100)) {
             Sheet sheet = wb.createSheet("Asistentes");
@@ -288,31 +288,22 @@ public class CargaService {
                     },
                     (ResultSet rs) -> {
                         Row r = sheet.createRow(fila[0]++);
-                        String correo = rs.getString("correo");
-                        String tipoDoc = rs.getString("tipo_documento");
-                        String fechaReg = rs.getString("fecha_registro_origen");
-                        String nombre = rs.getString("nombre");
-                        String nombreCompleto = rs.getString("nombre_completo");
-                        String apellidos = rs.getString("apellidos");
-                        Timestamp creado = rs.getTimestamp("creado_en");
-                        Boolean cmr = (Boolean) rs.getObject("terminos_cmr");
-                        Boolean cond = (Boolean) rs.getObject("terminos_condiciones");
+                        Timestamp fechaIngreso = rs.getTimestamp("fecha_ingreso_evento");
 
-                        r.createCell(0).setCellValue(correo == null ? "" : correo);
-                        r.createCell(1).setCellValue(correo == null ? "" : correo);
-                        escribirNumeroOTexto(r.createCell(2), tipoDoc == null ? "1" : tipoDoc);
-                        escribirNumeroOTexto(r.createCell(3), rs.getString("dni"));
-                        escribirNumeroOTexto(r.createCell(4), rs.getString("celular"));
-                        r.createCell(5).setCellValue(cmr == null ? Boolean.TRUE : cmr);
-                        r.createCell(6).setCellValue(fechaReg != null ? fechaReg
-                                : (creado != null ? FORMATO_FECHA.format(creado.toLocalDateTime()) : ""));
-                        r.createCell(7).setCellValue(nombre != null ? nombre
-                                : (nombreCompleto == null ? "" : nombreCompleto));
-                        r.createCell(8).setCellValue(apellidos == null ? "" : apellidos);
-                        r.createCell(9).setCellValue(cond == null ? Boolean.TRUE : cond);
+                        escribirNumeroOTexto(r.createCell(0), rs.getString("dni"));
+                        r.createCell(1).setCellValue(valorSeguro(rs.getString("nombre_completo")));
+                        escribirNumeroOTexto(r.createCell(2), rs.getString("celular"));
+                        r.createCell(3).setCellValue(valorSeguro(rs.getString("correo")));
+                        r.createCell(4).setCellValue(valorSeguro(rs.getString("especialidad")));
+                        r.createCell(5).setCellValue(fechaIngreso == null ? ""
+                                : FORMATO_FECHA.format(fechaIngreso.toLocalDateTime()));
                     });
             wb.write(out);
         }
+    }
+
+    private String valorSeguro(String valor) {
+        return valor == null ? "" : valor;
     }
 
     private void escribirNumeroOTexto(Cell celda, String valor) {
