@@ -1,0 +1,16 @@
+# ===========================================================================
+#  PLANTILLA.  Copia este archivo como  application-local.properties
+#  >>> NO pegues su contenido dentro de application.properties <<<
+#  application-local.properties esta ignorado por git (no se sube al repo).
+# ===========================================================================
+
+# --- Conexion a Supabase (Session pooler, puerto 5432) ---------------------
+spring.datasource.url=jdbc:postgresql://aws-0-<REGION>.pooler.supabase.com:5432/postgres
+spring.datasource.username=postgres.<PROJECT-REF>
+spring.datasource.password=<TU-PASSWORD>
+
+# --- Clave de administracion (cabecera X-Admin-Key) ------------------------
+app.admin-key=<UNA-CLAVE-SECRETA>
+
+# --- CORS (URL del frontend) ----------------------------------------------
+app.cors.allowed-origins=http://localhost:5173

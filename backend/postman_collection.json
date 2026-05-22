@@ -1,0 +1,310 @@
+{
+  "info": {
+    "name": "PlatformRegister - Backend Evento y Charlas",
+    "description": "Coleccion de endpoints del backend de registro de evento y charlas. Variables: baseUrl, adminKey.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080", "type": "string" },
+    { "key": "adminKey", "value": "cambia-esta-clave-admin", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Asistentes (Evento)",
+      "item": [
+        {
+          "name": "Buscar asistente por DNI",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/asistentes/buscar?dni=12345678",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "asistentes", "buscar"],
+              "query": [{ "key": "dni", "value": "12345678" }]
+            },
+            "description": "Busca por DNI. Devuelve {encontrado, asistente}. Si no existe, encontrado=false."
+          }
+        },
+        {
+          "name": "Obtener asistente por DNI",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/asistentes/12345678",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "asistentes", "12345678"]
+            }
+          }
+        },
+        {
+          "name": "Listar asistentes (paginado)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/asistentes?pagina=0&tamano=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "asistentes"],
+              "query": [
+                { "key": "pagina", "value": "0" },
+                { "key": "tamano", "value": "50" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Crear nuevo asistente",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dni\": \"99999999\",\n  \"nombreCompleto\": \"Nuevo Asistente Prueba\",\n  \"celular\": \"987654321\",\n  \"correo\": \"nuevo@correo.com\",\n  \"especialidad\": \"General\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/asistentes",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "asistentes"]
+            },
+            "description": "Crea un asistente con tipo 'NUEVO REGISTRADO'."
+          }
+        },
+        {
+          "name": "Registrar ingreso al evento",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/asistentes/12345678/ingreso",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "asistentes", "12345678", "ingreso"]
+            },
+            "description": "Marca el ingreso al evento general. Un DNI solo puede ingresar una vez."
+          }
+        },
+        {
+          "name": "Deshacer ingreso al evento",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/asistentes/12345678/ingreso",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "asistentes", "12345678", "ingreso"]
+            }
+          }
+        },
+        {
+          "name": "Estadisticas de asistentes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/asistentes/estadisticas",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "asistentes", "estadisticas"]
+            }
+          }
+        },
+        {
+          "name": "Charlas del asistente",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/asistentes/12345678/charlas",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "asistentes", "12345678", "charlas"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Salas / Charlas",
+      "item": [
+        {
+          "name": "Listar charlas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/charlas?incluirOcultas=false&incluirFinalizadas=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "charlas"],
+              "query": [
+                { "key": "incluirOcultas", "value": "false" },
+                { "key": "incluirFinalizadas", "value": "true" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Obtener charla por id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/charlas/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "charlas", "1"]
+            }
+          }
+        },
+        {
+          "name": "Crear charla (ADMIN)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Admin-Key", "value": "{{adminKey}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Charla de Prueba\",\n  \"sala\": \"Sala A\",\n  \"horaInicio\": \"2026-05-21T09:00:00\",\n  \"horaFin\": \"2026-05-21T10:00:00\",\n  \"aforo\": 80\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/charlas",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "charlas"]
+            }
+          }
+        },
+        {
+          "name": "Actualizar charla / aforo (ADMIN)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Admin-Key", "value": "{{adminKey}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Charla de Prueba (editada)\",\n  \"sala\": \"Sala B\",\n  \"horaInicio\": \"2026-05-21T09:00:00\",\n  \"horaFin\": \"2026-05-21T10:30:00\",\n  \"aforo\": 100,\n  \"oculta\": false\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/charlas/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "charlas", "1"]
+            }
+          }
+        },
+        {
+          "name": "Eliminar charla (ADMIN)",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "X-Admin-Key", "value": "{{adminKey}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/charlas/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "charlas", "1"]
+            }
+          }
+        },
+        {
+          "name": "Ocultar / mostrar charla (ADMIN)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Admin-Key", "value": "{{adminKey}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"oculta\": true\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/charlas/1/visibilidad",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "charlas", "1", "visibilidad"]
+            }
+          }
+        },
+        {
+          "name": "Registrar asistente en charla",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dni\": \"12345678\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/charlas/1/registros",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "charlas", "1", "registros"]
+            },
+            "description": "Registro rapido. El asistente debe haber ingresado al evento. Controla aforo y duplicados."
+          }
+        },
+        {
+          "name": "Deshacer registro en charla",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/charlas/1/registros/12345678",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "charlas", "1", "registros", "12345678"]
+            }
+          }
+        },
+        {
+          "name": "Listar registrados de una charla",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/charlas/1/registros",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "charlas", "1", "registros"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Carga de Base de Datos",
+      "item": [
+        {
+          "name": "Cargar CSV de asistentes (ADMIN)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "X-Admin-Key", "value": "{{adminKey}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "archivo", "type": "file", "src": [] }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/carga/asistentes",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "carga", "asistentes"]
+            },
+            "description": "Sube el CSV de pre-registro. Selecciona el archivo en el campo 'archivo' (Body -> form-data)."
+          }
+        },
+        {
+          "name": "Descargar plantilla CSV",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/carga/plantilla",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "carga", "plantilla"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
