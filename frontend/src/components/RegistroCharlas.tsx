@@ -141,8 +141,10 @@ export default function RegistroCharlas({ persona, onGuardado }: Props) {
   }
 
   const estaLlena = (c: Charla) => c.registrados >= c.aforo
-  const activas = charlas.filter((c) => !c.finalizada && !c.oculta)
-  const ocultas = charlas.filter((c) => c.finalizada || c.oculta)
+  // Solo se ocultan las charlas que se marcaron manualmente (oculta=true).
+  // El hecho de que el horario haya terminado NO las archiva automaticamente.
+  const activas = charlas.filter((c) => !c.oculta)
+  const ocultas = charlas.filter((c) => c.oculta)
 
   return (
     <section className="rounded-xl border border-slate-200 bg-white">
@@ -201,7 +203,7 @@ export default function RegistroCharlas({ persona, onGuardado }: Props) {
           >
             <span className="flex items-center gap-2">
               {ocultosAbierto ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              Horarios finalizados / llenos / ocultos ({ocultas.length})
+              Horarios ocultos / archivados ({ocultas.length})
             </span>
             <ChevronDown
               className={`h-4 w-4 transition-transform ${ocultosAbierto ? 'rotate-180' : ''}`}
@@ -368,16 +370,14 @@ function FilaOculta({
       <span className="rounded bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">
         {condicion}
       </span>
-      {!charla.finalizada && (
-        <button
-          onClick={onMostrar}
-          disabled={cargando}
-          className="ml-auto flex items-center gap-1 rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-60"
-        >
-          <Eye className="h-3.5 w-3.5" />
-          {cargando ? '...' : 'Mostrar'}
-        </button>
-      )}
+      <button
+        onClick={onMostrar}
+        disabled={cargando}
+        className="ml-auto flex items-center gap-1 rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-60"
+      >
+        <Eye className="h-3.5 w-3.5" />
+        {cargando ? '...' : 'Mostrar'}
+      </button>
     </div>
   )
 }
